@@ -1,0 +1,13 @@
+root:
+  script: scripts/DerivedNode.lua
+  type: Node
+  name: root
+  children:
+  - node: 
+      script: scripts/DerivedNode.lua
+      type: Node
+      name: gay
+  - node:
+      script: scripts/DerivedNode.lua
+      type: Node
+      name: boyy
