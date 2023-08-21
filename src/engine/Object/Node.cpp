@@ -85,26 +85,39 @@ void Node::run(lua_State *L, const char *method) {
   mlua_getobject(L, getLuaRef());
   // get it's script table
   mlua_getobject(L, getScriptRef());
-  // get the start function from the script
-  lua_getfield(L, -1, method);
-  if (lua_isfunction(L, -1)) {
+  if (lua_istable(L, -1)) {
 
-    // push the table as the first argument
-    lua_pushvalue(L, -2);
+    // get the start function from the script
+    lua_getfield(L, -1, method);
+    if (lua_isfunction(L, -1)) {
 
-    // push the userdata as the second argument
-    lua_pushvalue(L, -4);
+      // push the table as the first argument
+      lua_pushvalue(L, -2);
 
-    // call start
-    if (lua_pcall(L, 2, 0, 0) != LUA_OK) {
-      const char *error = lua_tostring(L, -1);
-      std::cout << error << std::endl;
+      // push the userdata as the second argument
+      lua_pushvalue(L, -4);
+
+      // call start
+      if (lua_pcall(L, 2, 0, 0) != LUA_OK) {
+        const char *error = lua_tostring(L, -1);
+        std::cout << error << std::endl;
+      }
+      lua_pop(L, 2);
+    } else {
+      lua_pop(L, 3);
+      std::cout << "Could not find function " << method << std::endl;
     }
   } else {
-    std::cout << "Could not find function " << method << std::endl;
+    lua_pop(L, 2);
+    std::cout << "Could not find script table " << method << std::endl;
   }
-  for (Node *child : children) {
-    child->run(L, method);
+  for (int i = 0; i < children.size(); i++) {
+    if (children[i] == nullptr) {
+      children.erase(children.begin() + i);
+    } else {
+
+      children[i]->run(L, method);
+    }
   }
 }
 

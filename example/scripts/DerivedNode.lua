@@ -1,5 +1,7 @@
 -- This is how you inherit Node
-DerivedNode = {_extends = Node}
+DerivedNode = {
+  _extends = Node,
+  value = 1}
 
 function DerivedNode:Start(node)
   print(node:getName(), " started!")
@@ -9,8 +11,9 @@ function DerivedNode:Start(node)
   end
 end
 function DerivedNode:Update(node)
-  node:setName(self:generateRandomString(5))
-  print(node:getName(), " updated!")
+  self.value = self.value + 1
+  print(node:getName(), " updated!", self.value)
+  -- print(self:generateRandomString(2))
 end
 function DerivedNode:generateRandomString(n)
   -- Define the characters to choose from

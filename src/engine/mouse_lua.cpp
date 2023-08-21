@@ -10,6 +10,7 @@
  */
 
 #include "mouse_lua.h"
+#include "Object.h"
 
 #include <iostream>
 
@@ -17,6 +18,40 @@ namespace mouse {
 
 static std::vector<std::string> registered_types = std::vector<std::string>();
 static int stack_size = 0;
+
+/**
+ * Called when an object is collected. The object is released
+ * once in this function, possibly deleting it.
+ **/
+static int m__gc(lua_State *L) {
+  Object *object = (Object *)lua_touserdata(L, 1);
+  if (object != nullptr) {
+    object->release();
+  }
+  return 0;
+}
+static int m__release(lua_State *L) {
+  Object *object = (Object *)lua_touserdata(L, 1);
+
+  if (object != nullptr) {
+    int lref = object->getLuaRef();
+    int sref = object->getScriptRef();
+    object->release();
+
+    // Fetch the registry table of instantiated objects.
+    mlua_getregistry(L, REGISTRY_OBJECTS);
+
+    if (lua_istable(L, -1)) {
+      luaL_unref(L, -1, lref);
+      luaL_unref(L, -1, sref);
+    }
+
+    lua_pop(L, 1);
+  }
+
+  lua_pushboolean(L, object != nullptr);
+  return 1;
+}
 
 void mlua_setfuncs(lua_State *L, const luaL_Reg *l) {
   if (l == nullptr)
@@ -36,6 +71,7 @@ void mlua_registerscript(lua_State *L, const char *type) {
   mlua_getregistry(L, REGISTRY_TYPES);
   lua_pushvalue(L, -2);      // Push a copy of the table
   lua_setfield(L, -2, type); // _mousetypes[type] = mt
+  lua_pop(L, 2);
 }
 void mlua_registertype(lua_State *L, const char *type, lua_CFunction l_new,
                        lua_CFunction l_delete, const luaL_Reg *l_funcs) {
@@ -60,7 +96,7 @@ void mlua_registertype(lua_State *L, const char *type, lua_CFunction l_new,
   // lua_setfield(L, -2, "__name");
 
   /* Garbage collection */
-  lua_pushcfunction(L, l_delete);
+  lua_pushcfunction(L, m__release);
   lua_setfield(L, -2, "__gc");
 
   /* Copies the mt and sets it as prototype */
@@ -129,15 +165,15 @@ int mlua_getregistry(lua_State *L, Registry r) {
       lua_newtable(L);
       lua_replace(L, -2);
 
-      // Create a metatable.
-      lua_newtable(L);
+      // // Create a metatable.
+      // lua_newtable(L);
 
-      // metatable.__mode = "v". Weak userdata values.
-      lua_pushliteral(L, "v");
-      lua_setfield(L, -2, "__mode");
+      // // metatable.__mode = "v". Weak userdata values.
+      // lua_pushliteral(L, "v");
+      // lua_setfield(L, -2, "__mode");
 
-      // setmetatable(newtable, metatable)
-      lua_setmetatable(L, -2);
+      // // setmetatable(newtable, metatable)
+      // lua_setmetatable(L, -2);
 
       // registry._mouseobjects = newtable
       lua_setfield(L, LUA_REGISTRYINDEX, "_mouseobjects");
@@ -151,15 +187,15 @@ int mlua_getregistry(lua_State *L, Registry r) {
       lua_newtable(L);
       lua_replace(L, -2);
 
-      // Create a metatable.
-      lua_newtable(L);
+      // // Create a metatable.
+      // lua_newtable(L);
 
-      // metatable.__mode = "v". Weak userdata values.
-      lua_pushliteral(L, "v");
-      lua_setfield(L, -2, "__mode");
+      // // metatable.__mode = "v". Weak userdata values.
+      // lua_pushliteral(L, "v");
+      // lua_setfield(L, -2, "__mode");
 
-      // setmetatable(newtable, metatable)
-      lua_setmetatable(L, -2);
+      // // setmetatable(newtable, metatable)
+      // lua_setmetatable(L, -2);
 
       // registry._mouseobjects = newtable
       lua_setfield(L, LUA_REGISTRYINDEX, "_mousetypes");

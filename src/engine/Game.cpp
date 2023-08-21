@@ -17,9 +17,18 @@ namespace mouse {
 
 #define GAME_FPS 10
 
+static int typesRef;
+static int objectsRef;
+
 mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
   L = l;
   projectData = project;
+
+  /* We want to cache refs to these repos so they don'y get gc'd */
+  mlua_getregistry(L, REGISTRY_TYPES);
+  typesRef = luaL_ref(L, -1);
+  mlua_getregistry(L, REGISTRY_OBJECTS);
+  objectsRef = luaL_ref(L, -1);
 
   /* Register Lua game objects */
   Node::l_register(L);
@@ -33,6 +42,7 @@ mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
 mouse_status_t Game::run() {
   running = true;
   int frametime = 1000 / GAME_FPS;
+  // lua_gc(L, LUA_GCSTOP, 0);
   currentScene->getTree()->run(L, "Start");
   do {
     auto start = std::chrono::system_clock::now();
@@ -48,6 +58,7 @@ mouse_status_t Game::run() {
     std::this_thread::sleep_for(std::chrono::milliseconds(frametime) -
                                 std::chrono::milliseconds(end_ms - start_ms));
   } while (running);
+  // lua_gc(L, LUA_GCRESTART, 0);
   return MOUSE_STATUS_OKAY;
 }
 
@@ -76,7 +87,6 @@ Node *Game::loadTree(YAML::Node yaml) {
     node->setLuaType(type.c_str());
     *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = node;
     mlua_setobjectmetatable(L, "Node");
-
     // register the node
     mlua_getregistry(L, REGISTRY_OBJECTS);
     lua_pushvalue(L, -2); // get the userdata back on top
@@ -91,7 +101,7 @@ Node *Game::loadTree(YAML::Node yaml) {
     int sref = luaL_ref(L, -2);
     node->setScriptRef(sref);
     // clear the stack
-    lua_settop(L, 0);
+    lua_pop(L, 5);
   }
   if (yaml["name"]) {
     // std::cout << yaml["name"].as<std::string>().c_str() << std::endl;

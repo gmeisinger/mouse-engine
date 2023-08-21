@@ -52,34 +52,6 @@ static int run(int argc, const char *argv[]) {
   int init_status = game->init(L, project);
   int exit_status = game->run();
   cout << "Mouse Engine exiting..." << endl;
-  // // set up lua
-  // lua_State *L = luaL_newstate();
-  // luaL_openlibs(L);
-  // // Register game objects
-  // Node::l_register(L);
-
-  // create game object
-  // init with L and project path
-  // game will do the parsing and return something
-  // all good, run game
-
-  /*TESTS*/
-
-  // run script
-  // int error = luaL_dofile(L, TEST_SCRIPT);
-  // if (error) {
-  //   const char *errorMessage = lua_tostring(L, -1);
-  //   // Print or handle the error message
-  //   lua_pop(L, 1); // Pop the error message from the stack
-  //   cout << errorMessage << endl;
-  // }
-
-  /*  We want to run the script so that our new type has been defined
-      but it doesn't actually do anything. We need to instance a Node,
-      create it in lua, and use the metatable we created by extending node.
-      Then in our game loop we will tell each node to run it's lifecycle
-      method with its corresponding userdata.
-  */
 
   return 0;
 }

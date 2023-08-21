@@ -55,11 +55,10 @@ public:
   int getScriptRef();
   void setScriptRef(int ref);
 
-private:
+protected:
   // The reference count.
   std::atomic<int> count;
 
-protected:
   int luaref;
   int scriptref;
 
