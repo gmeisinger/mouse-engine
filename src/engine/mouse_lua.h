@@ -63,7 +63,7 @@ void mlua_registerscript(lua_State *L, const char *type);
  *  a function name paired with a lua wrapped function pointer.
  */
 void mlua_registertype(lua_State *L, const char *name, lua_CFunction l_new,
-                       lua_CFunction l_delete, const luaL_Reg *l_funcs);
+                       const luaL_Reg *l_funcs);
 bool mlua_istyperegistered(lua_State *L, const char *type);
 /**
  * @brief Gets the metatable associated with type. This can be a base type

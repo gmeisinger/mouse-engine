@@ -74,7 +74,7 @@ void mlua_registerscript(lua_State *L, const char *type) {
   lua_pop(L, 2);
 }
 void mlua_registertype(lua_State *L, const char *type, lua_CFunction l_new,
-                       lua_CFunction l_delete, const luaL_Reg *l_funcs) {
+                       const luaL_Reg *l_funcs) {
   lua_settop(L, 0);
   /* Check if a type is registered under this name */
   if (mlua_istyperegistered(L, type)) {

@@ -8,6 +8,6 @@ root:
       type: Node
       name: gay
   - node:
-      script: scripts/DerivedNode.lua
-      type: Node
-      name: boyy
+      script: scripts/DerivedNode2d.lua
+      type: Node2d
+      name: 2d

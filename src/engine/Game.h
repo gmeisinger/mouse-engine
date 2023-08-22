@@ -33,6 +33,7 @@ class Game {
 public:
   mouse_status_t init(lua_State *l, mouse_project_data_t *project);
   mouse_status_t run();
+  static void *generateBaseType(lua_State *L, const char *basetype);
 
 private:
   lua_State *L;

@@ -48,6 +48,17 @@ public:
   // Registers the Node class in Lua
   static void l_register(lua_State *L);
 
+  // Lua wrappers
+  static int l_new(lua_State *L);
+  static int l_setScript(lua_State *L);
+  static int l_setName(lua_State *L);
+  static int l_getName(lua_State *L);
+  static int l_childCount(lua_State *L);
+  static int l_removeChild(lua_State *L);
+  static int l_getParent(lua_State *L);
+  static int l_getChild(lua_State *L);
+  static int l_addChild(lua_State *L);
+
 protected:
   std::vector<Node *> children;
   Node *parent;

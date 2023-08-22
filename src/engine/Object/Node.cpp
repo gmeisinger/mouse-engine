@@ -220,15 +220,15 @@ void Node::update(lua_State *L) {
 
 #define LUA_NODE "Node"
 
-static int l_Node_addChild(lua_State *L) {
-  Node *node = *(Node **)luaL_checkudata(L, 1, LUA_NODE);
-  Node *child = *(Node **)luaL_checkudata(L, 2, LUA_NODE);
+int Node::l_addChild(lua_State *L) {
+  Node *node = *(Node **)lua_touserdata(L, 1);
+  Node *child = *(Node **)lua_touserdata(L, 2);
   node->addChild(child);
   return 0;
 }
-static int l_Node_getChild(lua_State *L) {
+int Node::l_getChild(lua_State *L) {
   // get the node
-  Node **nodePtr = reinterpret_cast<Node **>(luaL_checkudata(L, 1, LUA_NODE));
+  Node **nodePtr = reinterpret_cast<Node **>(lua_touserdata(L, 1));
   Node *child;
   // check next arg
   if (lua_isstring(L, 2)) {
@@ -248,62 +248,60 @@ static int l_Node_getChild(lua_State *L) {
   luaL_setmetatable(L, LUA_NODE);
   return 1;
 }
-static int l_Node_getParent(lua_State *L) {
+int Node::l_getParent(lua_State *L) {
   // get the node
-  Node **nodePtr = reinterpret_cast<Node **>(luaL_checkudata(L, 1, LUA_NODE));
+  Node **nodePtr = reinterpret_cast<Node **>(lua_touserdata(L, 1));
   Node *parent = (*nodePtr)->getParent();
   *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = parent;
   // Set the metatable for the userdata
   luaL_setmetatable(L, LUA_NODE);
   return 1;
 }
-static int l_Node_removeChild(lua_State *L) {
+int Node::l_removeChild(lua_State *L) {
   // get the node
-  Node **nodePtr = reinterpret_cast<Node **>(luaL_checkudata(L, 1, LUA_NODE));
+  Node **nodePtr = reinterpret_cast<Node **>(lua_touserdata(L, 1));
   // get the index
   int idx = (int)luaL_checkinteger(L, 2);
   // erase that child
   (*nodePtr)->removeChild(idx);
   return 0;
 }
-static int l_Node_childCount(lua_State *L) {
-  Node **nodePtr = reinterpret_cast<Node **>(luaL_checkudata(L, 1, LUA_NODE));
+int Node::l_childCount(lua_State *L) {
+  Node **nodePtr = reinterpret_cast<Node **>(lua_touserdata(L, 1));
   lua_pushinteger(L, (*nodePtr)->childCount());
   return 1;
 }
-static int l_Node_getName(lua_State *L) {
+int Node::l_getName(lua_State *L) {
   // get the node
-  Node **nodePtr = reinterpret_cast<Node **>(luaL_checkudata(L, 1, LUA_NODE));
+  Node **nodePtr = reinterpret_cast<Node **>(lua_touserdata(L, 1));
   // return the name
   lua_pushstring(L, (*nodePtr)->getName());
   return 1;
 }
-static int l_Node_setName(lua_State *L) {
+int Node::l_setName(lua_State *L) {
   // get the node
-  Node **nodePtr = reinterpret_cast<Node **>(luaL_checkudata(L, 1, LUA_NODE));
+  Node **nodePtr = reinterpret_cast<Node **>(lua_touserdata(L, 1));
   // get the string
   const char *name = (const char *)luaL_checkstring(L, 2);
   // set the name
   (*nodePtr)->setName(name);
   return 0;
 }
-static int l_Node_setScript(lua_State *L) {
-  Node *nodePtr = *reinterpret_cast<Node **>(luaL_checkudata(L, 1, LUA_NODE));
+int Node::l_setScript(lua_State *L) {
+  Node *nodePtr = *reinterpret_cast<Node **>(lua_touserdata(L, 1));
   // get the string
   const char *_script = (const char *)luaL_checkstring(L, 2);
   // set the script
   nodePtr->setScript(L, _script);
   return 0;
 }
-static int l_Node_delete(lua_State *L) {
-  delete *reinterpret_cast<Node **>(lua_touserdata(L, 1));
-  return 0;
-}
-static int l_Node_new(lua_State *L) {
-  const char *_name = luaL_checkstring(L, 1);
-  Node *node = new Node(_name);
+int Node::l_new(lua_State *L) {
+  // const char *_name = luaL_checkstring(L, 1);
+  Node *node = new Node();
   *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = node;
-
+  if (lua_isstring(L, 1)) {
+    node->setName((const char *)lua_tostring(L, 1));
+  }
   // Set the metatable for the userdata
   // luaL_setmetatable(L, LUA_NODE);
   mlua_setobjectmetatable(L, LUA_NODE);
@@ -316,17 +314,17 @@ static int l_Node_new(lua_State *L) {
 }
 
 // TypeData
-static const luaL_Reg nodeFuncs[] = {{"addChild", l_Node_addChild},
-                                     {"getChild", l_Node_getChild},
-                                     {"removeChild", l_Node_removeChild},
-                                     {"childCount", l_Node_childCount},
-                                     {"getName", l_Node_getName},
-                                     {"setName", l_Node_setName},
-                                     {"getParent", l_Node_getParent},
-                                     {"setScript", l_Node_setScript},
+static const luaL_Reg nodeFuncs[] = {{"addChild", Node::l_addChild},
+                                     {"getChild", Node::l_getChild},
+                                     {"removeChild", Node::l_removeChild},
+                                     {"childCount", Node::l_childCount},
+                                     {"getName", Node::l_getName},
+                                     {"setName", Node::l_setName},
+                                     {"getParent", Node::l_getParent},
+                                     {"setScript", Node::l_setScript},
                                      {nullptr, nullptr}};
 void Node::l_register(lua_State *L) {
-  mlua_registertype(L, "Node", l_Node_new, l_Node_delete, nodeFuncs);
+  mlua_registertype(L, "Node", l_new, nodeFuncs);
 }
 
 } // namespace mouse
