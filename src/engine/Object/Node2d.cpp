@@ -19,11 +19,13 @@ mouse::Type Node2d::type("Node2d", &Node::type);
 
 // Constructors/Destructors
 Node2d::Node2d(const char *_name) {
+  basetype = "Node2d";
   setName(_name);
   setLuaType(type.getName());
   position = Vector2(0, 0);
 }
 Node2d::Node2d() {
+  basetype = "Node2d";
   setName(type.getName());
   setLuaType(type.getName());
   position = Vector2(0, 0);
@@ -106,9 +108,10 @@ int Node2d::l_setPosition(lua_State *L) {
 int Node2d::l_new(lua_State *L) {
   Node2d *node = new Node2d();
   *reinterpret_cast<Node2d **>(lua_newuserdata(L, sizeof(Node2d *))) = node;
-
+  if (lua_isstring(L, 1)) {
+    node->setName((const char *)lua_tostring(L, 1));
+  }
   // Set the metatable for the userdata
-  // luaL_setmetatable(L, LUA_NODE);
   mlua_setobjectmetatable(L, LUA_NODE2D);
   // We need to register the node
   mlua_getregistry(L, REGISTRY_OBJECTS);
@@ -117,22 +120,15 @@ int Node2d::l_new(lua_State *L) {
   lua_rawgeti(L, -1, node->getLuaRef());
   return 1;
 }
-// int Node2d::l_getName(lua_State *L) {
-//   // get the node
-//   Node2d **nodePtr = reinterpret_cast<Node2d **>(lua_touserdata(L, 1));
-//   // return the name
-//   lua_pushstring(L, (*nodePtr)->getName());
-//   return 1;
-// }
 
-static const luaL_Reg node2dFuncs[] = {{"addChild", Node2d::l_addChild},
-                                       {"getChild", Node2d::l_getChild},
-                                       {"removeChild", Node2d::l_removeChild},
-                                       {"childCount", Node2d::l_childCount},
-                                       {"getName", Node2d::l_getName},
-                                       {"setName", Node2d::l_setName},
-                                       {"getParent", Node2d::l_getParent},
-                                       {"setScript", Node2d::l_setScript},
+static const luaL_Reg node2dFuncs[] = {{"addChild", Node::l_addChild},
+                                       {"getChild", Node::l_getChild},
+                                       {"removeChild", Node::l_removeChild},
+                                       {"childCount", Node::l_childCount},
+                                       {"getName", Node::l_getName},
+                                       {"setName", Node::l_setName},
+                                       {"getParent", Node::l_getParent},
+                                       {"setScript", Node::l_setScript},
                                        {"getPosition", Node2d::l_getPosition},
                                        {"setPosition", Node2d::l_setPosition},
                                        {"getX", Node2d::l_getX},

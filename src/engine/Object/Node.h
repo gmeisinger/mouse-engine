@@ -39,11 +39,12 @@ public:
   const char *getLuaType();
   void setLuaType(const char *_name);
   void setScript(lua_State *L, const char *script);
+  char *getBaseType();
 
   // Lifecycle methods
   void run(lua_State *L, const char *method);
-  void start(lua_State *L);
-  void update(lua_State *L);
+  // void start(lua_State *L);
+  // void update(lua_State *L);
 
   // Registers the Node class in Lua
   static void l_register(lua_State *L);
@@ -64,6 +65,7 @@ protected:
   Node *parent;
   char *name;
   char *luatype;
+  char *basetype;
 };
 
 } // namespace mouse

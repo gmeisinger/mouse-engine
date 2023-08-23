@@ -12,6 +12,7 @@
 #ifndef MOUSE_LUA_H
 #define MOUSE_LUA_H
 
+#include "mouse_yaml.h"
 #include "types.h"
 
 extern "C" {
@@ -36,6 +37,8 @@ enum Registry {
   REGISTRY_TYPES    // for type metatables
 };
 
+void mlua_setrootpath(std::filesystem::path path);
+
 /* Lua Helpers */
 
 /**
@@ -43,6 +46,16 @@ enum Registry {
  * top of the stack.
  **/
 void mlua_setfuncs(lua_State *L, const luaL_Reg *l);
+/**
+ * @brief Loads and executes the lua script at path. This is only
+ * intended to be used with game scripts, will throw an error
+ * with others.
+ *
+ * @param L
+ * @param path
+ * @return const char*
+ */
+const char *mlua_loadscript(lua_State *L, const char *path);
 /**
  * @brief Registers a Lua type so that it can be resused. Lua types
  * are tables as opposed to userdata.

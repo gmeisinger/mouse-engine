@@ -36,6 +36,7 @@ public:
   static void l_register(lua_State *L);
   // Lua wrappers
   static int l_new(lua_State *L);
+
   static int l_getX(lua_State *L);
   static int l_setX(lua_State *L);
   static int l_getY(lua_State *L);

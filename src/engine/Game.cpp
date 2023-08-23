@@ -29,7 +29,9 @@ mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
   L = l;
   projectData = project;
 
-  /* We want to cache refs to these repos so they don'y get gc'd */
+  mlua_setrootpath(projectData->project_root);
+
+  /* We want to cache refs to these repos so they don't get gc'd */
   mlua_getregistry(L, REGISTRY_TYPES);
   typesRef = luaL_ref(L, -1);
   mlua_getregistry(L, REGISTRY_OBJECTS);
@@ -48,11 +50,13 @@ mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
   return MOUSE_STATUS_OKAY;
 }
 mouse_status_t Game::run() {
+  static int loopCounter = 0;
   running = true;
   int frametime = 1000 / GAME_FPS;
   // lua_gc(L, LUA_GCSTOP, 0);
   currentScene->getTree()->run(L, "Start");
   do {
+    // std::cout << lua_gettop(L) << std::endl;
     auto start = std::chrono::system_clock::now();
     auto start_ms =
         std::chrono::time_point_cast<std::chrono::milliseconds>(start);
@@ -65,8 +69,9 @@ mouse_status_t Game::run() {
     auto end_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(end);
     std::this_thread::sleep_for(std::chrono::milliseconds(frametime) -
                                 std::chrono::milliseconds(end_ms - start_ms));
-  } while (running);
+  } while (loopCounter++ < 300);
   // lua_gc(L, LUA_GCRESTART, 0);
+  delete currentScene;
   return MOUSE_STATUS_OKAY;
 }
 
@@ -81,21 +86,12 @@ Node *Game::loadTree(YAML::Node yaml) {
   }
   if (yaml["script"]) {
     std::filesystem::path path =
-        projectData->project_root /
         (std::filesystem::path)yaml["script"].as<std::string>();
     std::string script = myaml_getfilename(path);
     // check if type has been registered
     if (!mlua_istyperegistered(L, script.c_str())) {
-      // run the script
-      int error = luaL_dofile(L, path.string().c_str());
-      if (error) {
-        const char *errorMessage = lua_tostring(L, -1);
-        // Print or handle the error message
-        lua_pop(L, 1); // Pop the error message from the stack
-        std::cout << errorMessage << std::endl;
-      }
-      // register the type
-      mlua_registerscript(L, script.c_str());
+      // this will prepend the project root to the path
+      mlua_loadscript(L, path.string().c_str());
     }
     node->setLuaType(script.c_str());
     // register the node
@@ -103,16 +99,8 @@ Node *Game::loadTree(YAML::Node yaml) {
     lua_pushvalue(L, -2); // get the userdata back on top
     int ref = luaL_ref(L, -2);
     node->setLuaRef(ref);
-    /* copy the script table and register it */
-    mlua_gettypemetatable(L, script.c_str());
-    mlua_copytable(L);
-    lua_pushvalue(L, -3);
-    lua_pushvalue(L, -2);
-    // now the stack is [registry, copy]
-    int sref = luaL_ref(L, -2);
-    node->setScriptRef(sref);
-    // clear the stack
-    lua_pop(L, 5);
+    // /* copy the script table and register it */
+    node->setScript(L, script.c_str());
   }
   if (yaml["name"]) {
     // std::cout << yaml["name"].as<std::string>().c_str() << std::endl;

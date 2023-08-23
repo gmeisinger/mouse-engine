@@ -33,4 +33,7 @@ mouse_project_data_t *myaml_load_project(std::filesystem::path path) {
 std::string myaml_getfilename(std::filesystem::path path) {
   return path.stem().string();
 }
+std::string myaml_getfilename(const char *path) {
+  return std::filesystem::path(path).stem().string();
+}
 } // namespace mouse

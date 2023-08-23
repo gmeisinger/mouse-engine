@@ -18,6 +18,7 @@
 namespace mouse {
 mouse_project_data_t *myaml_load_project(std::filesystem::path path);
 std::string myaml_getfilename(std::filesystem::path path);
+std::string myaml_getfilename(const char *path);
 } // namespace mouse
 
 #endif // MOUSE_YAML_H

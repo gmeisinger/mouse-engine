@@ -12,12 +12,14 @@
 #include "mouse_lua.h"
 #include "Object.h"
 
+#include <filesystem>
 #include <iostream>
 
 namespace mouse {
 
-static std::vector<std::string> registered_types = std::vector<std::string>();
 static int stack_size = 0;
+
+static std::filesystem::path root_path;
 
 /**
  * Called when an object is collected. The object is released
@@ -52,7 +54,7 @@ static int m__release(lua_State *L) {
   lua_pushboolean(L, object != nullptr);
   return 1;
 }
-
+void mlua_setrootpath(std::filesystem::path path) { root_path = path; }
 void mlua_setfuncs(lua_State *L, const luaL_Reg *l) {
   if (l == nullptr)
     return;
@@ -62,7 +64,21 @@ void mlua_setfuncs(lua_State *L, const luaL_Reg *l) {
     lua_setfield(L, -2, l->name);
   }
 }
-
+const char *mlua_loadscript(lua_State *L, const char *path) {
+  std::filesystem::path fullPath = root_path / std::filesystem::path(path);
+  // run the script
+  int error = luaL_dofile(L, fullPath.string().c_str());
+  if (error) {
+    const char *errorMessage = lua_tostring(L, -1);
+    // Print or handle the error message
+    lua_pop(L, 1); // Pop the error message from the stack
+    std::cout << errorMessage << std::endl;
+  }
+  // register the type
+  const char *newType = myaml_getfilename(path).c_str();
+  mlua_registerscript(L, newType);
+  return newType;
+}
 void mlua_registerscript(lua_State *L, const char *type) {
   // since we just ran the script, the derived type should be in global scope
   lua_getglobal(L, type);
@@ -91,9 +107,6 @@ void mlua_registertype(lua_State *L, const char *type, lua_CFunction l_new,
 
   /* Create the metatable */
   luaL_newmetatable(L, type);
-  // lua_newtable(L);
-  // lua_pushstring(L, type);
-  // lua_setfield(L, -2, "__name");
 
   /* Garbage collection */
   lua_pushcfunction(L, m__release);
@@ -110,8 +123,7 @@ void mlua_registertype(lua_State *L, const char *type, lua_CFunction l_new,
 
   /* Register the metatable in the registry for reuse */
   mlua_getregistry(L, REGISTRY_TYPES);
-  lua_pushvalue(L, -2); // Push a copy of the metatable
-  // mlua_gettypemetatable(L, type);
+  lua_pushvalue(L, -2);      // Push a copy of the metatable
   lua_setfield(L, -2, type); // _mousetypes[type] = mt
 
   /* pop registry and mt */
@@ -121,6 +133,8 @@ void mlua_registertype(lua_State *L, const char *type, lua_CFunction l_new,
   // which are userdata with the metatable we registered
 }
 void mlua_gettypemetatable(lua_State *L, const char *type) {
+  // lua_getglobal(L, "_mousetypes");
+
   mlua_getregistry(L, REGISTRY_TYPES);
   lua_getfield(L, -1, type);
   lua_replace(L, -2);
@@ -138,16 +152,25 @@ bool mlua_istyperegistered(lua_State *L, const char *type) {
 }
 void mlua_setobjectmetatable(lua_State *L, const char *type) {
   // the userdata should be on top of the stack
-  mlua_getregistry(L, REGISTRY_TYPES);
-  lua_getfield(L, -1, type);
+  if (!lua_isuserdata(L, -1)) {
+    std::cout << "No userdata on stack, cannot set metatable." << std::endl;
+  }
+  mlua_gettypemetatable(L, type);
   if (lua_istable(L, -1)) {
-    lua_setmetatable(L, -3); // pops metatable
+    // std::cout << lua_gettop(L) << std::endl;
+    // lua_pushnil(L);
+    // while (lua_next(L, -2) != 0) {
+    //   const char *key = (const char *)lua_tostring(L, -2); // key
+    //   const char *val = (const char *)lua_tostring(L, -1); // value
+    //   std::cout << key << std::endl;
+    //   lua_pop(L, 1); // pop value, keep key (so it can get popped by next)
+    // }
+    lua_setmetatable(L, -2); // pops metatable
   } else {
     lua_pop(L, 1); // pops whatever we got from the registry (nil?)
     // type isn't registered
     std::cout << "Type name not registered, cannot set metatable." << std::endl;
   }
-  lua_pop(L, 1); // pop the registry
 }
 void mlua_getobject(lua_State *L, int ref) {
   mlua_getregistry(L, REGISTRY_OBJECTS);
@@ -168,8 +191,8 @@ int mlua_getregistry(lua_State *L, Registry r) {
       // // Create a metatable.
       // lua_newtable(L);
 
-      // // metatable.__mode = "v". Weak userdata values.
-      // lua_pushliteral(L, "v");
+      // // metatable.__mode = "k". Weak userdata keys.
+      // lua_pushliteral(L, "k");
       // lua_setfield(L, -2, "__mode");
 
       // // setmetatable(newtable, metatable)
@@ -182,6 +205,7 @@ int mlua_getregistry(lua_State *L, Registry r) {
     return 1;
   case REGISTRY_TYPES:
     lua_getfield(L, LUA_REGISTRYINDEX, "_mousetypes");
+    // lua_getglobal(L, "_mousetypes");
     // Create registry._mousetypes if it doesn't exist yet.
     if (!lua_istable(L, -1)) {
       lua_newtable(L);
@@ -191,7 +215,7 @@ int mlua_getregistry(lua_State *L, Registry r) {
       // lua_newtable(L);
 
       // // metatable.__mode = "v". Weak userdata values.
-      // lua_pushliteral(L, "v");
+      // lua_pushliteral(L, "k");
       // lua_setfield(L, -2, "__mode");
 
       // // setmetatable(newtable, metatable)
@@ -200,6 +224,8 @@ int mlua_getregistry(lua_State *L, Registry r) {
       // registry._mouseobjects = newtable
       lua_setfield(L, LUA_REGISTRYINDEX, "_mousetypes");
       lua_getfield(L, LUA_REGISTRYINDEX, "_mousetypes");
+      // lua_setglobal(L, "_mousetypes");
+      // lua_getglobal(L, "_mousetypes");
     }
     return 1;
   default:

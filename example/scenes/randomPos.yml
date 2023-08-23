@@ -1,0 +1,4 @@
+root:
+  script: scripts/RandomRoot.lua
+  type: Node
+  name: root

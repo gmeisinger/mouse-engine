@@ -10,6 +10,7 @@
  */
 
 #include "Node.h"
+#include "mouse_yaml.h"
 
 #include <cstring>
 #include <iostream>
@@ -19,14 +20,18 @@ namespace mouse {
 mouse::Type Node::type("Node", &Object::type);
 
 Node::Node(const char *_name) {
+  basetype = "Node";
   setName(_name);
   setLuaType(type.getName());
 }
 Node::Node() {
+  basetype = "Node";
   setName(type.getName());
   setLuaType(type.getName());
 }
 Node::~Node() {}
+
+char *Node::getBaseType() { return basetype; }
 
 void Node::addChild(Node *child) {
   child->setParent(this);
@@ -64,18 +69,24 @@ Node *Node::getParent() { return parent; }
 void Node::setParent(Node *p) { parent = p; }
 
 void Node::setScript(lua_State *L, const char *script) {
+  const char *registeredScript = myaml_getfilename(script).c_str();
   // get table
-  if (mlua_istyperegistered(L, script)) {
-    mlua_gettypemetatable(L, script);
-    // copy table
-    mlua_copytable(L);
-    // store in reg
-    mlua_getregistry(L, REGISTRY_OBJECTS);
-    lua_pushvalue(L, -2);
-    setScriptRef(luaL_ref(L, -2));
-
-    // lua_settop(L, 0);
+  if (!mlua_istyperegistered(L, registeredScript)) {
+    /* We might have a full path, try to run the script */
+    mlua_loadscript(L, script);
   }
+  setLuaType(registeredScript);
+
+  mlua_gettypemetatable(L, registeredScript);
+  if (!lua_istable(L, -1)) {
+    std::cout << "error" << std::endl;
+  }
+  // copy table
+  mlua_copytable(L);
+  // store in reg
+  mlua_getregistry(L, REGISTRY_OBJECTS);
+  lua_pushvalue(L, -2);
+  setScriptRef(luaL_ref(L, -2));
 }
 
 // Lifecycle methods
@@ -83,6 +94,9 @@ void Node::setScript(lua_State *L, const char *script) {
 void Node::run(lua_State *L, const char *method) {
   // get the userdata
   mlua_getobject(L, getLuaRef());
+  if (!lua_isuserdata(L, -1)) {
+    std::cout << "Node lost its lua obj ref!" << std::endl;
+  }
   // get it's script table
   mlua_getobject(L, getScriptRef());
   if (lua_istable(L, -1)) {
@@ -115,104 +129,8 @@ void Node::run(lua_State *L, const char *method) {
     if (children[i] == nullptr) {
       children.erase(children.begin() + i);
     } else {
-
       children[i]->run(L, method);
     }
-  }
-}
-
-void Node::start(lua_State *L) {
-  // get the registry
-  mlua_getregistry(L, REGISTRY_OBJECTS);
-  if (!lua_istable(L, -1)) {
-    std::cout << "Error getting registry." << std::endl;
-    return;
-  }
-  // get the userdata
-  lua_rawgeti(L, -1, getLuaRef());
-  if (!lua_isuserdata(L, -1)) {
-    std::cout << "Error getting userdata." << std::endl;
-    return;
-  }
-  // get the required metatable
-  // mlua_gettypemetatable(L, luatype);
-  // if (!lua_istable(L, -1)) {
-  //   std::cout << "Error getting metatable for " << luatype << std::endl;
-  //   return;
-  // }
-  // get it's script table
-  lua_rawgeti(L, -2, getScriptRef());
-  if (!lua_istable(L, -1)) {
-    std::cout << "Error getting script for " << luatype << std::endl;
-    return;
-  }
-  // get the start function from the script
-  lua_getfield(L, -1, "Start");
-  if (lua_isfunction(L, -1)) {
-
-    // push the table as the first argument
-    lua_pushvalue(L, -2);
-
-    // push the userdata as the second argument
-    lua_pushvalue(L, -4);
-
-    // call start
-    if (lua_pcall(L, 2, 0, 0) != LUA_OK) {
-      const char *error = lua_tostring(L, -1);
-      std::cout << error << std::endl;
-    }
-  } else {
-    std::cout << "Could not find function 'Start'." << std::endl;
-  }
-  for (Node *child : children) {
-    child->start(L);
-  }
-}
-void Node::update(lua_State *L) {
-  // get the registry
-  // mlua_getregistry(L, REGISTRY_OBJECTS);
-  // if (!lua_istable(L, -1)) {
-  //   std::cout << "Error getting registry." << std::endl;
-  //   return;
-  // }
-  // // get the userdata
-  mlua_getobject(L, getLuaRef());
-  // lua_rawgeti(L, -1, getLuaRef());
-  // if (!lua_isuserdata(L, -1)) {
-  //   std::cout << "Error getting userdata." << std::endl;
-  //   return;
-  // }
-  // get the required metatable
-  // mlua_gettypemetatable(L, luatype);
-  // if (!lua_istable(L, -1)) {
-  //   std::cout << "Error getting metatable for " << luatype << std::endl;
-  //   return;
-  // }
-  // get it's script table
-  lua_rawgeti(L, -2, getScriptRef());
-  if (!lua_istable(L, -1)) {
-    std::cout << "Error getting script for " << luatype << std::endl;
-    return;
-  }
-  // get the start function from the script
-  lua_getfield(L, -1, "Update");
-  if (lua_isfunction(L, -1)) {
-
-    // push the table as the first argument
-    lua_pushvalue(L, -2);
-    // push the userdata as the second argument
-    lua_pushvalue(L, -4);
-
-    // call start
-    if (lua_pcall(L, 2, 0, 0) != LUA_OK) {
-      const char *error = lua_tostring(L, -1);
-      std::cout << error << std::endl;
-    }
-  } else {
-    std::cout << "Could not find function 'Start'." << std::endl;
-  }
-  for (Node *child : children) {
-    child->update(L);
   }
 }
 
@@ -241,20 +159,28 @@ int Node::l_getChild(lua_State *L) {
     lua_pushnil(L);
     return 1;
   }
-
-  // stuff him in a udata
-  *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = child;
-  // Set the metatable for the userdata
-  luaL_setmetatable(L, LUA_NODE);
+  if (child == nullptr) {
+    std::cout << "this child is nullptr!" << std::endl;
+  }
+  // We want to get the ref to this guy
+  mlua_getobject(L, child->getLuaRef());
+  // instead of creating a new one!
+  // *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = child;
+  if (!lua_isuserdata(L, -1)) {
+    std::cout << "this child is not userdata!" << std::endl;
+  }
+  // Set the metatable for the userdata (shouldn't need to now)
+  // mlua_setobjectmetatable(L, child->getBaseType());
   return 1;
 }
 int Node::l_getParent(lua_State *L) {
   // get the node
   Node **nodePtr = reinterpret_cast<Node **>(lua_touserdata(L, 1));
   Node *parent = (*nodePtr)->getParent();
-  *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = parent;
+  mlua_getobject(L, parent->getLuaRef());
+  // *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = parent;
   // Set the metatable for the userdata
-  luaL_setmetatable(L, LUA_NODE);
+  // mlua_setobjectmetatable(L, parent->getBaseType());
   return 1;
 }
 int Node::l_removeChild(lua_State *L) {

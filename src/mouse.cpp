@@ -52,7 +52,8 @@ static int run(int argc, const char *argv[]) {
   int init_status = game->init(L, project);
   int exit_status = game->run();
   cout << "Mouse Engine exiting..." << endl;
-
+  delete game;
+  delete project;
   return 0;
 }
 
