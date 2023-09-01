@@ -121,23 +121,17 @@ int Node2d::l_new(lua_State *L) {
   return 1;
 }
 
-static const luaL_Reg node2dFuncs[] = {{"addChild", Node::l_addChild},
-                                       {"getChild", Node::l_getChild},
-                                       {"removeChild", Node::l_removeChild},
-                                       {"childCount", Node::l_childCount},
-                                       {"getName", Node::l_getName},
-                                       {"setName", Node::l_setName},
-                                       {"getParent", Node::l_getParent},
-                                       {"setScript", Node::l_setScript},
+static std::vector<luaL_Reg> node2dFuncs = {
                                        {"getPosition", Node2d::l_getPosition},
                                        {"setPosition", Node2d::l_setPosition},
                                        {"getX", Node2d::l_getX},
                                        {"setX", Node2d::l_setX},
                                        {"getY", Node2d::l_getY},
-                                       {"setY", Node2d::l_setY},
-                                       {nullptr, nullptr}};
+                                       {"setY", Node2d::l_setY}};
 void Node2d::l_register(lua_State *L) {
-  mlua_registertype(L, "Node2d", Node2d::l_new, node2dFuncs);
+  // Leave the nullptr on the end
+  l_funcs.insert(l_funcs.end()-1, node2dFuncs.begin(), node2dFuncs.end());
+  mlua_registertype(L, "Node2d", Node2d::l_new, l_funcs.data());
 }
 
 } // namespace mouse

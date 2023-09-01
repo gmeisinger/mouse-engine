@@ -66,6 +66,7 @@ protected:
   char *name;
   char *luatype;
   char *basetype;
+  static std::vector<luaL_Reg> l_funcs;
 };
 
 } // namespace mouse

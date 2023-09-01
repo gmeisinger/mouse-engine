@@ -250,17 +250,20 @@ int Node::l_new(lua_State *L) {
 }
 
 // TypeData
-static const luaL_Reg nodeFuncs[] = {{"addChild", Node::l_addChild},
+
+
+std::vector<luaL_Reg> Node::l_funcs = {{"addChild", Node::l_addChild},
                                      {"getChild", Node::l_getChild},
                                      {"removeChild", Node::l_removeChild},
                                      {"childCount", Node::l_childCount},
                                      {"getName", Node::l_getName},
                                      {"setName", Node::l_setName},
                                      {"getParent", Node::l_getParent},
-                                     {"setScript", Node::l_setScript},
-                                     {nullptr, nullptr}};
+                                     {"setScript", Node::l_setScript}};
+
 void Node::l_register(lua_State *L) {
-  mlua_registertype(L, "Node", l_new, nodeFuncs);
+  l_funcs.push_back({nullptr, nullptr});
+  mlua_registertype(L, "Node", l_new, l_funcs.data());
 }
 
 } // namespace mouse
