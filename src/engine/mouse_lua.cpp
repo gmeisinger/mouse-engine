@@ -245,35 +245,4 @@ void mlua_copytable(lua_State *L) {
   }
 }
 
-int mlua_insist(lua_State *L, int idx, const char *k) {
-  // Convert to absolute index if necessary.
-  if (idx < 0 && idx > LUA_REGISTRYINDEX)
-    idx += lua_gettop(L) + 1;
-
-  lua_getfield(L, idx, k);
-
-  // Create if necessary.
-  if (!lua_istable(L, -1)) {
-    lua_pop(L, 1); // Pop the non-table.
-    lua_newtable(L);
-    lua_pushvalue(L, -1);    // Duplicate the table to leave on top.
-    lua_setfield(L, idx, k); // lua_stack[idx][k] = lua_stack[-1] (table)
-  }
-
-  return 1;
-}
-
-int mlua_insistglobal(lua_State *L, const char *k) {
-  lua_getglobal(L, k);
-
-  if (!lua_istable(L, -1)) {
-    lua_pop(L, 1); // Pop the non-table.
-    lua_newtable(L);
-    lua_pushvalue(L, -1);
-    lua_setglobal(L, k);
-  }
-
-  return 1;
-}
-
 } // namespace mouse

@@ -30,7 +30,7 @@ template <typename T> class StrongRef;
 
 /**
  * Registries represent special tables which can be accessed with
- * luax_insistregistry and luax_getregistry.
+ * mlua_getregistry.
  **/
 enum Registry {
   REGISTRY_OBJECTS, // for instanced object refs
@@ -77,6 +77,9 @@ void mlua_registerscript(lua_State *L, const char *type);
  */
 void mlua_registertype(lua_State *L, const char *name, lua_CFunction l_new,
                        const luaL_Reg *l_funcs);
+/**
+ * Returns true if type has already been registered in lua.
+ */
 bool mlua_istyperegistered(lua_State *L, const char *type);
 /**
  * @brief Gets the metatable associated with type. This can be a base type
@@ -94,6 +97,10 @@ void mlua_gettypemetatable(lua_State *L, const char *type);
  * @param type
  */
 void mlua_setobjectmetatable(lua_State *L, const char *type);
+/**
+ * Retrieves an object from the object registry using an integer
+ * ref provided by luaL_ref.
+ */
 void mlua_getobject(lua_State *L, int ref);
 /**
  * @brief Copies the table on top of the stack and pushes the result.
@@ -111,10 +118,6 @@ void mlua_copytable(lua_State *L);
  * @return int
  */
 int mlua_getregistry(lua_State *L, Registry r);
-
-int mlua_insist(lua_State *L, int idx, const char *k);
-int mlua_insistglobal(lua_State *L, const char *k);
-
 } // namespace mouse
 
 #endif // MOUSE_LUA_H
