@@ -16,8 +16,9 @@ namespace mouse {
 
 class Graphics {
 public:
+  
 protected:
-}
+};
 
 } // namespace mouse
 

@@ -21,11 +21,15 @@ mouse::Type Node::type("Node", &Object::type);
 
 Node::Node(const char *_name) {
   basetype = "Node";
+  name = nullptr;
+  luatype = nullptr;
   setName(_name);
   setLuaType(type.getName());
 }
 Node::Node() {
   basetype = "Node";
+  name = nullptr;
+  luatype = nullptr;
   setName(type.getName());
   setLuaType(type.getName());
 }
@@ -53,14 +57,20 @@ int Node::childCount() { return children.size(); }
 
 const char *Node::getName() { return name; }
 void Node::setName(const char *_name) {
-  delete[] name;
+  if (name != nullptr)
+  {
+    delete[] name;
+  }
   name = new char[strlen(_name) + 1];
   strcpy(name, _name);
 }
 
 const char *Node::getLuaType() { return luatype; }
 void Node::setLuaType(const char *_name) {
-  delete[] luatype;
+  if (luatype != nullptr)
+  {
+    delete[] luatype;
+  }
   luatype = new char[strlen(_name) + 1];
   strcpy(luatype, _name);
 }
