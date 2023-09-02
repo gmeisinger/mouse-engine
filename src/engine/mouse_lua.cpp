@@ -89,6 +89,31 @@ void mlua_registerscript(lua_State *L, const char *type) {
   lua_setfield(L, -2, type); // _mousetypes[type] = mt
   lua_pop(L, 2);
 }
+void mlua_registermodule(lua_State *L, const char *mod_name, const luaL_Reg *l_funcs)
+{
+  // lua_newtable(L);
+  // lua_setglobal(L, mod_name);
+  
+  /* Modules live in the global table "Mouse"
+   * They cannot be instanced, but provide static functions
+   */
+  
+  luaL_newmetatable(L, mod_name);
+
+  lua_pushvalue(L, -1);
+  lua_setfield(L, -2, "__index");
+
+  mlua_setfuncs(L, l_funcs);
+
+  mlua_getregistry(L, REGISTRY_MODULES);
+  lua_pushvalue(L, -2);
+  lua_setfield(L, -2, mod_name);
+
+  /* Pop the registry, leave the mt */
+  lua_pop(L, 2);
+
+  
+}
 void mlua_registertype(lua_State *L, const char *type, lua_CFunction l_new,
                        const luaL_Reg *l_funcs) {
   lua_settop(L, 0);
@@ -226,6 +251,28 @@ int mlua_getregistry(lua_State *L, Registry r) {
       lua_getfield(L, LUA_REGISTRYINDEX, "_mousetypes");
       // lua_setglobal(L, "_mousetypes");
       // lua_getglobal(L, "_mousetypes");
+    }
+    return 1;
+  case REGISTRY_MODULES:
+    lua_getglobal(L, "Mouse");
+    // Create registry._mousetypes if it doesn't exist yet.
+    if (!lua_istable(L, -1)) {
+      lua_newtable(L);
+      lua_replace(L, -2);
+
+      // // Create a metatable.
+      // lua_newtable(L);
+
+      // // metatable.__mode = "v". Weak userdata values.
+      // lua_pushliteral(L, "k");
+      // lua_setfield(L, -2, "__mode");
+
+      // // setmetatable(newtable, metatable)
+      // lua_setmetatable(L, -2);
+
+      // registry._mouseobjects = newtable
+      lua_setglobal(L, "Mouse");
+      lua_getglobal(L, "Mouse");
     }
     return 1;
   default:

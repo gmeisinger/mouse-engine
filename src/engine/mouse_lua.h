@@ -34,7 +34,8 @@ template <typename T> class StrongRef;
  **/
 enum Registry {
   REGISTRY_OBJECTS, // for instanced object refs
-  REGISTRY_TYPES    // for type metatables
+  REGISTRY_TYPES,   // for type metatables
+  REGISTRY_MODULES, // for global module tables
 };
 
 void mlua_setrootpath(std::filesystem::path path);
@@ -64,6 +65,7 @@ const char *mlua_loadscript(lua_State *L, const char *path);
  * @param type
  */
 void mlua_registerscript(lua_State *L, const char *type);
+void mlua_registermodule(lua_State *L, const char *mod_name, const luaL_Reg *l_funcs);
 /**
  * Registers a base type for use in Lua. Base types represent C++ classes.
  * They are registered at boot and are available in all scripts.

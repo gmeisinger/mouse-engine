@@ -4,11 +4,12 @@ RandomRoot = {
 
 function RandomRoot:Start(node)
   print("Random positions go!")
-  local baby1 = Node2d.new("baby1")
-  baby1:setScript("scripts/RandomPosition.lua") --
+  local baby1 = Sprite.new("baby1")
+  baby1:setScript("scripts/RandomPosition.lua")
   node:addChild(baby1)
-  local baby2 = Node2d.new("baby2")
+  local baby2 = Sprite.new("baby2")
   baby2:setScript("scripts/RandomPosition.lua")
+  baby2:setAscii("@")
   node:addChild(baby2)
   print("Added 2 babies!")
 end

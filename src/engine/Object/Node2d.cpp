@@ -59,7 +59,7 @@ int Node2d::l_setX(lua_State *L) {
   {
     Node2d *nodePtr = *reinterpret_cast<Node2d **>(lua_touserdata(L, 1));
     if (lua_isinteger(L, 2)) {
-      nodePtr->setX(lua_tointeger(L, 2));
+      nodePtr->setX((int)lua_tointeger(L, 2));
     }
     return 0;
   }
@@ -76,7 +76,7 @@ int Node2d::l_setY(lua_State *L) {
   {
     Node2d *nodePtr = *reinterpret_cast<Node2d **>(lua_touserdata(L, 1));
     if (lua_isinteger(L, 2)) {
-      nodePtr->setY(lua_tointeger(L, 2));
+      nodePtr->setY((int)lua_tointeger(L, 2));
     }
     return 0;
   }

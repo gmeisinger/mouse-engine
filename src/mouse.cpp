@@ -9,11 +9,11 @@
  *
  */
 
-#include "Game.h"
-#include "mouse_yaml.h"
-
 #include <iostream>
 #include <string>
+
+#include "Game.h"
+#include "mouse_yaml.h"
 
 #define TEST_SCRIPT "test.lua"
 

@@ -28,6 +28,7 @@ public:
 
   // Node/Tree methods
   void addChild(Node *child);
+  std::vector<Node *> getChildren();
   Node *getChildByIndex(int idx);
   Node *getChildByName(const char *childname);
   Node *getParent();

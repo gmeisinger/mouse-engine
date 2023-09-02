@@ -25,10 +25,10 @@ namespace mouse {
 
 mouse::Type Object::type("Object", nullptr);
 
-Object::Object() : count(1) {}
+Object::Object() : count(1), scriptref(-1), luaref(-1) {}
 
 Object::Object(const Object & /*other*/)
-    : count(1) // Always start with a reference count of 1.
+    : count(1), scriptref(-1), luaref(-1) // Always start with a reference count of 1.
 {}
 
 Object::~Object() {}

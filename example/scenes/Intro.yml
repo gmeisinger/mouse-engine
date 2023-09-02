@@ -1,0 +1,4 @@
+root:
+  script: scripts/Intro.lua
+  type: Node
+  name: root

@@ -10,6 +10,7 @@
  */
 
 #include "Game.h"
+#include "AsciiGraphics.h"
 #include <chrono>
 #include <iostream>
 #include <thread>
@@ -24,6 +25,12 @@ static int typesRef;
 static int objectsRef;
 
 static void initializeTypeGenerators(lua_State *L);
+
+static AsciiGraphics *graphics;
+static int l_getScreenWidth(lua_State *L);
+static int l_getScreenHeight(lua_State *L);
+static std::vector<luaL_Reg> l_graphics_funcs = {{"getScreenWidth", l_getScreenWidth},
+                                     {"getScreenHeight", l_getScreenHeight}};
 
 mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
   L = l;
@@ -40,6 +47,7 @@ mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
   /* Register Lua game objects */
   Node::l_register(L);
   Node2d::l_register(L);
+  Sprite::l_register(L);
 
   initializeTypeGenerators(L);
 
@@ -47,6 +55,15 @@ mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
   currentScene =
       loadScene(projectData->project_root / projectData->initial_scene);
   std::cout << "Init complete!" << std::endl;
+
+  /* Init Graphics */
+  graphics = new AsciiGraphics();
+  graphics->init();
+
+  /* Register Modules */ 
+  l_graphics_funcs.push_back({nullptr, nullptr});
+  mlua_registermodule(L, "Graphics", l_graphics_funcs.data());
+
   return MOUSE_STATUS_OKAY;
 }
 mouse_status_t Game::run() {
@@ -63,6 +80,7 @@ mouse_status_t Game::run() {
 
     currentScene->getTree()->run(L, "Update");
     // graphics->render(currentScene->getTree());
+    graphics->run(currentScene->getTree());
 
     // sleep
     auto end = std::chrono::system_clock::now();
@@ -71,6 +89,7 @@ mouse_status_t Game::run() {
                                 std::chrono::milliseconds(end_ms - start_ms));
   } while (loopCounter++ < 300);
   // lua_gc(L, LUA_GCRESTART, 0);
+  graphics->deinit();
   delete currentScene;
   return MOUSE_STATUS_OKAY;
 }
@@ -150,6 +169,19 @@ void *Game::generateBaseType(lua_State *L, const char *basetype) {
     return nodeGenerators[basetype](L);
   } else {
     std::cout << "No generator for " << basetype << std::endl;
+    return nullptr;
   }
 }
+
+int l_getScreenWidth(lua_State *L)
+{
+  lua_pushinteger(L, graphics->getWidth());
+  return 1;
+}
+int l_getScreenHeight(lua_State *L)
+{
+  lua_pushinteger(L, graphics->getHeight());
+  return 1;
+}
+
 } // namespace mouse

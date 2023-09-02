@@ -41,7 +41,9 @@ void Node::addChild(Node *child) {
   child->setParent(this);
   children.push_back(child);
 }
-
+std::vector<Node *> Node::getChildren() {
+  return children;
+}
 Node *Node::getChildByIndex(int idx) { return children[idx]; }
 Node *Node::getChildByName(const char *childname) {
   for (int i = 0; i < children.size(); i++) {
@@ -89,7 +91,7 @@ void Node::setScript(lua_State *L, const char *script) {
 
   mlua_gettypemetatable(L, registeredScript);
   if (!lua_istable(L, -1)) {
-    std::cout << "error" << std::endl;
+    //std::cout << "error" << std::endl;
   }
   // copy table
   mlua_copytable(L);
@@ -102,11 +104,13 @@ void Node::setScript(lua_State *L, const char *script) {
 // Lifecycle methods
 
 void Node::run(lua_State *L, const char *method) {
+  if (scriptref < 0) return;
   // get the userdata
   mlua_getobject(L, getLuaRef());
   if (!lua_isuserdata(L, -1)) {
-    std::cout << "Node lost its lua obj ref!" << std::endl;
+    //std::cout << "Node lost its lua obj ref!" << std::endl;
   }
+
   // get it's script table
   mlua_getobject(L, getScriptRef());
   if (lua_istable(L, -1)) {
@@ -129,11 +133,11 @@ void Node::run(lua_State *L, const char *method) {
       lua_pop(L, 2);
     } else {
       lua_pop(L, 3);
-      std::cout << "Could not find function " << method << std::endl;
+      //std::cout << "Could not find function " << method << std::endl;
     }
   } else {
     lua_pop(L, 2);
-    std::cout << "Could not find script table " << method << std::endl;
+    //std::cout << "Could not find script table " << method << std::endl;
   }
   for (int i = 0; i < children.size(); i++) {
     if (children[i] == nullptr) {
@@ -156,28 +160,34 @@ int Node::l_addChild(lua_State *L) {
 }
 int Node::l_getChild(lua_State *L) {
   // get the node
-  Node **nodePtr = reinterpret_cast<Node **>(lua_touserdata(L, 1));
+  Node *nodePtr = *reinterpret_cast<Node **>(lua_touserdata(L, 1));
   Node *child;
   // check next arg
-  if (lua_isstring(L, 2)) {
-    const char *childname = (const char *)luaL_checkstring(L, 2);
-    child = (*nodePtr)->getChildByName(childname);
-  } else if (lua_isinteger(L, 2)) {
-    int idx = (int)luaL_checkinteger(L, 2);
-    child = (*nodePtr)->getChildByIndex(idx);
-  } else {
+  if (lua_isinteger(L, 2)) {
+    int idx = (int)lua_tointeger(L, 2);
+    child = nodePtr->getChildByIndex(idx);
+  }
+  else if (lua_isstring(L, 2)) {
+    const char *childname = (const char *)lua_tostring(L, 2);
+    child = nodePtr->getChildByName(childname);
+  }  
+  else {
     lua_pushnil(L);
     return 1;
   }
   if (child == nullptr) {
-    std::cout << "this child is nullptr!" << std::endl;
+    //std::cout << "this child is nullptr!" << std::endl;
+    lua_pushnil(L);
+    return 1;
   }
   // We want to get the ref to this guy
   mlua_getobject(L, child->getLuaRef());
   // instead of creating a new one!
   // *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = child;
   if (!lua_isuserdata(L, -1)) {
-    std::cout << "this child is not userdata!" << std::endl;
+   // std::cout << "this child is not userdata!" << std::endl;
+    lua_pushnil(L);
+    lua_replace(L, -2);
   }
   // Set the metatable for the userdata (shouldn't need to now)
   // mlua_setobjectmetatable(L, child->getBaseType());
