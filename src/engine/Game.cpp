@@ -87,7 +87,7 @@ mouse_status_t Game::run() {
     auto end_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(end);
     std::this_thread::sleep_for(std::chrono::milliseconds(frametime) -
                                 std::chrono::milliseconds(end_ms - start_ms));
-  } while (loopCounter++ < 300);
+  } while (running);
   // lua_gc(L, LUA_GCRESTART, 0);
   graphics->deinit();
   delete currentScene;

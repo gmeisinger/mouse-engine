@@ -1,25 +1,57 @@
---[[ Intro Sequence
---
--- Create a Sprite for each letter
--- Find the array of positions for the string to be centered
--- position each sprite just off screen
--- update position until its where it needs to be
---
---]]--
+--[[ INNER MONOLOGUE SIMULATOR ]]--
+
+
+
+sad_messages = {
+  "KILL YOURSELF",
+  "YOU'RE WORTHLESS",
+  "NOBODY LIKES YOU",
+  "WASTE OF SPACE",
+  "YOUR PARENTS FAILED",
+  "LOSER",
+  "YOU'LL DIE ALONE",
+  "EVEN YOUR FRIENDS HATE YOU",
+  "YOU'LL NEVER BE HAPPY",
+  "YOU ARE UGLY",
+  "YOU ARE BORING",
+  "THEY WON'T GO TO YOUR FUNERAL",
+  "NOBODY EVEN SEES YOU"
+}
+
+happy_messages = {
+  "YOU'LL BE OKAY",
+  "YOU ARE LOVED",
+  "JUST BE PATIENT",
+  "ONE DAY AT A TIME",
+  "COUNT YOUR BLESSINGS",
+  "YOU GOT THIS",
+  "YOU'RE STILL HERE",
+  "LIVE FOR YOURSELF",
+  "DON'T GIVE UP",
+  "FACE IT HEAD ON",
+  "GO AFTER IT"
+}
+
+messages = happy_messages
 
 Intro = {
   _extends = Node,
   titleString = "MOUSE ENGINE",
   center_x = 0,
-  center_y = 0
+  center_y = 0,
+  letter_pos = {},
+  rev = false,
+  turn = 0,
+  msg = messages[1]
 }
 
 function Intro:Start(node)
+  math.randomseed(os.time())
   self.center_x = (Mouse.Graphics.getScreenWidth() // 2) - (#self.titleString // 2)
   self.center_y = Mouse.Graphics.getScreenHeight() // 2
-  for i = 1, #self.titleString do
+  for i = 1, #self.msg do
     local top = i % 2
-    local c = self.titleString:sub(i,i)
+    local c = self.msg:sub(i,i)
     local letter = Sprite.new()
     local x = self.center_x + i
     local y = -i
@@ -35,17 +67,53 @@ function Intro:Update(node)
   if node:childCount() < 1 then
     error("no kids!!!")
   end
-  for i = 0, node:childCount() do
+  for i = 0, node:childCount()-1 do
     --local c = self.titleString:sub(i,i)
     local letter = node:getChild(i)
+    local bottom = Mouse.Graphics.getScreenHeight() + i
     if letter == nil then
       error("nil kid!")
     end
     local y = letter:getY()
-    if y > self.center_y then
-      letter:setY(y - 1)
-    elseif y < self.center_y then
-      letter:setY(y + 1)
+    local top = i % 2
+    if self.rev and i <= self.turn then
+      if top == 0 and y >= -i then
+        letter:setY(y-1)
+      elseif top == 1 and y <= bottom then
+        letter:setY(y+1)
+      elseif i == node:childCount() - 1 then
+        self.rev = false
+        self:Restart(node)
+      end
+    elseif not self.rev then 
+      if y > self.center_y then
+        letter:setY(y - 1)
+      elseif y < self.center_y then
+        letter:setY(y + 1)
+      elseif i == node:childCount() - 1 then
+        self.rev = true
+        self.turn = 0
+      end
     end
+  end
+  self.turn = self.turn + 1
+end
+function Intro:Restart(node)
+  while node:childCount() > 0 do
+    node:removeChild(0)
+  end
+  self.msg = messages[math.random(#messages)]
+  for i = 1, #self.msg do
+    local top = i % 2
+    local c = self.msg:sub(i,i)
+    local letter = Sprite.new()
+    local x = self.center_x + i
+    local y = -i
+    if top == 1 then
+      y = Mouse.Graphics.getScreenHeight() + i
+    end
+    letter:setAscii(c)
+    letter:setPosition(x, y)
+    node:addChild(letter)
   end
 end

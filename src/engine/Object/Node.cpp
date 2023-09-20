@@ -10,10 +10,11 @@
  */
 
 #include "Node.h"
-#include "mouse_yaml.h"
 
 #include <cstring>
 #include <iostream>
+
+#include "mouse_yaml.h"
 
 namespace mouse {
 
@@ -41,9 +42,7 @@ void Node::addChild(Node *child) {
   child->setParent(this);
   children.push_back(child);
 }
-std::vector<Node *> Node::getChildren() {
-  return children;
-}
+std::vector<Node *> Node::getChildren() { return children; }
 Node *Node::getChildByIndex(int idx) { return children[idx]; }
 Node *Node::getChildByName(const char *childname) {
   for (int i = 0; i < children.size(); i++) {
@@ -59,8 +58,7 @@ int Node::childCount() { return children.size(); }
 
 const char *Node::getName() { return name; }
 void Node::setName(const char *_name) {
-  if (name != nullptr)
-  {
+  if (name != nullptr) {
     delete[] name;
   }
   name = new char[strlen(_name) + 1];
@@ -69,8 +67,7 @@ void Node::setName(const char *_name) {
 
 const char *Node::getLuaType() { return luatype; }
 void Node::setLuaType(const char *_name) {
-  if (luatype != nullptr)
-  {
+  if (luatype != nullptr) {
     delete[] luatype;
   }
   luatype = new char[strlen(_name) + 1];
@@ -91,7 +88,7 @@ void Node::setScript(lua_State *L, const char *script) {
 
   mlua_gettypemetatable(L, registeredScript);
   if (!lua_istable(L, -1)) {
-    //std::cout << "error" << std::endl;
+    // std::cout << "error" << std::endl;
   }
   // copy table
   mlua_copytable(L);
@@ -108,17 +105,15 @@ void Node::run(lua_State *L, const char *method) {
   // get the userdata
   mlua_getobject(L, getLuaRef());
   if (!lua_isuserdata(L, -1)) {
-    //std::cout << "Node lost its lua obj ref!" << std::endl;
+    // std::cout << "Node lost its lua obj ref!" << std::endl;
   }
 
   // get it's script table
   mlua_getobject(L, getScriptRef());
   if (lua_istable(L, -1)) {
-
     // get the start function from the script
     lua_getfield(L, -1, method);
     if (lua_isfunction(L, -1)) {
-
       // push the table as the first argument
       lua_pushvalue(L, -2);
 
@@ -133,11 +128,11 @@ void Node::run(lua_State *L, const char *method) {
       lua_pop(L, 2);
     } else {
       lua_pop(L, 3);
-      //std::cout << "Could not find function " << method << std::endl;
+      // std::cout << "Could not find function " << method << std::endl;
     }
   } else {
     lua_pop(L, 2);
-    //std::cout << "Could not find script table " << method << std::endl;
+    // std::cout << "Could not find script table " << method << std::endl;
   }
   for (int i = 0; i < children.size(); i++) {
     if (children[i] == nullptr) {
@@ -166,17 +161,15 @@ int Node::l_getChild(lua_State *L) {
   if (lua_isinteger(L, 2)) {
     int idx = (int)lua_tointeger(L, 2);
     child = nodePtr->getChildByIndex(idx);
-  }
-  else if (lua_isstring(L, 2)) {
+  } else if (lua_isstring(L, 2)) {
     const char *childname = (const char *)lua_tostring(L, 2);
     child = nodePtr->getChildByName(childname);
-  }  
-  else {
+  } else {
     lua_pushnil(L);
     return 1;
   }
   if (child == nullptr) {
-    //std::cout << "this child is nullptr!" << std::endl;
+    // std::cout << "this child is nullptr!" << std::endl;
     lua_pushnil(L);
     return 1;
   }
@@ -185,7 +178,7 @@ int Node::l_getChild(lua_State *L) {
   // instead of creating a new one!
   // *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = child;
   if (!lua_isuserdata(L, -1)) {
-   // std::cout << "this child is not userdata!" << std::endl;
+    // std::cout << "this child is not userdata!" << std::endl;
     lua_pushnil(L);
     lua_replace(L, -2);
   }
@@ -241,6 +234,12 @@ int Node::l_setScript(lua_State *L) {
   nodePtr->setScript(L, _script);
   return 0;
 }
+int Node::l_getScript(lua_State *L) {
+  Node *nodePtr = *reinterpret_cast<Node **>(lua_touserdata(L, 1));
+  // use its script ref to get the instance from the registry and return it
+  mlua_getobject(L, nodePtr->getScriptRef());
+  return 1;
+}
 int Node::l_new(lua_State *L) {
   // const char *_name = luaL_checkstring(L, 1);
   Node *node = new Node();
@@ -261,19 +260,16 @@ int Node::l_new(lua_State *L) {
 
 // TypeData
 
-
-std::vector<luaL_Reg> Node::l_funcs = {{"addChild", Node::l_addChild},
-                                     {"getChild", Node::l_getChild},
-                                     {"removeChild", Node::l_removeChild},
-                                     {"childCount", Node::l_childCount},
-                                     {"getName", Node::l_getName},
-                                     {"setName", Node::l_setName},
-                                     {"getParent", Node::l_getParent},
-                                     {"setScript", Node::l_setScript}};
+std::vector<luaL_Reg> Node::l_funcs = {
+    {"addChild", Node::l_addChild},       {"getChild", Node::l_getChild},
+    {"removeChild", Node::l_removeChild}, {"childCount", Node::l_childCount},
+    {"getName", Node::l_getName},         {"setName", Node::l_setName},
+    {"getParent", Node::l_getParent},     {"setScript", Node::l_setScript},
+    {"getScript", Node::l_getScript}};
 
 void Node::l_register(lua_State *L) {
   l_funcs.push_back({nullptr, nullptr});
   mlua_registertype(L, "Node", l_new, l_funcs.data());
 }
 
-} // namespace mouse
+}  // namespace mouse

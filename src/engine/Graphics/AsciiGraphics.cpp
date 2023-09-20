@@ -28,6 +28,7 @@ void AsciiGraphics::init() {
   initscr();
   cbreak();
   noecho();
+  curs_set(0);
   keypad(stdscr, true);
   nodelay(stdscr, true);
   width = COLS - 1;

@@ -40,6 +40,7 @@ public:
   const char *getLuaType();
   void setLuaType(const char *_name);
   void setScript(lua_State *L, const char *script);
+  void getScript();
   char *getBaseType();
 
   // Lifecycle methods
@@ -53,6 +54,7 @@ public:
   // Lua wrappers
   static int l_new(lua_State *L);
   static int l_setScript(lua_State *L);
+  static int l_getScript(lua_State *L);
   static int l_setName(lua_State *L);
   static int l_getName(lua_State *L);
   static int l_childCount(lua_State *L);
