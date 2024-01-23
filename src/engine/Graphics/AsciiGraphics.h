@@ -14,19 +14,18 @@ class Sprite;
 class Vector2;
 
 class AsciiGraphics : public Graphics {
- public:
-  void init();
-  void deinit();
-  void run(Node *root);
-  void renderTree(Node *root, Vector2 offset);
-
+public:
+  void start(Node *node);
+  void stop();
   ~AsciiGraphics();
- private:
+
+private:
   bool initialized;
-  bool running;
   bool isVisible(Sprite *node);
+  void renderTree(Node *root, Vector2 offset);
+  void run();
 };
 
-}  // namespace mouse
+} // namespace mouse
 
-#endif  // ASCII_GRAPHICS_H
+#endif // ASCII_GRAPHICS_H

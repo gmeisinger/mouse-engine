@@ -13,6 +13,9 @@
 #define GRAPHICS_H
 
 #include "mouse_lua.h"
+#include <atomic>
+#include <mutex>
+#include <thread>
 
 namespace mouse {
 
@@ -20,17 +23,23 @@ class Node;
 
 class Graphics {
 public:
-  void init() {};
-  void run(Node *node) {};
+  void start(Node *node){};
+  void stop(){};
+  std::mutex &getMutex();
   int getWidth();
   int getHeight();
   static void l_register(lua_State *L);
 
 protected:
-  
-  
+  void run(){};
+
+  std::thread gfx_thread;
+  std::mutex gfx_mutex;
+  std::atomic<bool> running;
+
   int width;
   int height;
+  Node *root;
 
   static int l_getWidth(lua_State *L);
   static int l_getHeight(lua_State *L);

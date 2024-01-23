@@ -12,9 +12,12 @@
 #ifndef MOUSE_SCENE_H
 #define MOUSE_SCENE_H
 
-#include "mouse_objects.h"
+// #include "mouse_objects.h"
 
 namespace mouse {
+
+class Node;
+
 class Scene {
 public:
   Scene();

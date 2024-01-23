@@ -14,12 +14,16 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+
+#include "Sprite.h"
+
 namespace mouse {
 
 #define GAME_FPS 10
 
 using StringFunctionMap =
     std::unordered_map<std::string, std::function<void *(lua_State *)>>;
+
 static StringFunctionMap nodeGenerators;
 static int typesRef;
 static int objectsRef;
@@ -29,8 +33,9 @@ static void initializeTypeGenerators(lua_State *L);
 static AsciiGraphics *graphics;
 static int l_getScreenWidth(lua_State *L);
 static int l_getScreenHeight(lua_State *L);
-static std::vector<luaL_Reg> l_graphics_funcs = {{"getScreenWidth", l_getScreenWidth},
-                                     {"getScreenHeight", l_getScreenHeight}};
+static std::vector<luaL_Reg> l_graphics_funcs = {
+    {"getScreenWidth", l_getScreenWidth},
+    {"getScreenHeight", l_getScreenHeight}};
 
 mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
   L = l;
@@ -58,9 +63,8 @@ mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
 
   /* Init Graphics */
   graphics = new AsciiGraphics();
-  graphics->init();
 
-  /* Register Modules */ 
+  /* Register Modules */
   l_graphics_funcs.push_back({nullptr, nullptr});
   mlua_registermodule(L, "Graphics", l_graphics_funcs.data());
 
@@ -71,17 +75,23 @@ mouse_status_t Game::run() {
   running = true;
   int frametime = 1000 / GAME_FPS;
   // lua_gc(L, LUA_GCSTOP, 0);
-  currentScene->getTree()->run(L, "Start");
+  graphics->start(currentScene->getTree()); // this will start a thread
+  std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  {
+    std::lock_guard<std::mutex> lock(graphics->getMutex());
+    currentScene->getTree()->run(L, "Start");
+  }
   do {
     // std::cout << lua_gettop(L) << std::endl;
     auto start = std::chrono::system_clock::now();
     auto start_ms =
         std::chrono::time_point_cast<std::chrono::milliseconds>(start);
-
-    currentScene->getTree()->run(L, "Update");
-    // graphics->render(currentScene->getTree());
-    graphics->run(currentScene->getTree());
-
+    {
+      std::lock_guard<std::mutex> lock(graphics->getMutex());
+      currentScene->getTree()->run(L, "Update");
+    }
+    // graphics->run(currentScene->getTree());
+    // graphics->setRoot(currentScene->getTree());
     // sleep
     auto end = std::chrono::system_clock::now();
     auto end_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(end);
@@ -89,7 +99,7 @@ mouse_status_t Game::run() {
                                 std::chrono::milliseconds(end_ms - start_ms));
   } while (running);
   // lua_gc(L, LUA_GCRESTART, 0);
-  graphics->deinit();
+  graphics->stop(); // this will join the thread
   delete currentScene;
   return MOUSE_STATUS_OKAY;
 }
@@ -173,13 +183,11 @@ void *Game::generateBaseType(lua_State *L, const char *basetype) {
   }
 }
 
-int l_getScreenWidth(lua_State *L)
-{
+int l_getScreenWidth(lua_State *L) {
   lua_pushinteger(L, graphics->getWidth());
   return 1;
 }
-int l_getScreenHeight(lua_State *L)
-{
+int l_getScreenHeight(lua_State *L) {
   lua_pushinteger(L, graphics->getHeight());
   return 1;
 }

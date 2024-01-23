@@ -4,11 +4,23 @@
 
 #include "AsciiGraphics.h"
 
+#include <iostream>
 #include <ncurses.h>
+#include <thread>
 
 #include "mouse_objects.h"
 
 namespace mouse {
+
+void AsciiGraphics::start(Node *node) {
+  root = node;
+  running = true;
+  gfx_thread = std::thread(&AsciiGraphics::run, this);
+}
+void AsciiGraphics::stop() {
+  running = false;
+  gfx_thread.join();
+}
 
 bool AsciiGraphics::isVisible(Sprite *node) {
   Vector2 pos = node->getPosition();
@@ -23,8 +35,8 @@ AsciiGraphics::~AsciiGraphics() {
     endwin();
   }
 }
-void AsciiGraphics::init() {
-  initialized = true;
+
+void AsciiGraphics::run() {
   initscr();
   cbreak();
   noecho();
@@ -34,19 +46,14 @@ void AsciiGraphics::init() {
   width = COLS - 1;
   height = LINES - 1;
   refresh();
-}
-void AsciiGraphics::deinit() {
-  running = false;
-  endwin();
-  initialized = false;
-}
-void AsciiGraphics::run(Node *root) {
-  running = true;
-  // while (running) {
-  clear();
-  renderTree(root, Vector2());
-  refresh();
-  //}
+  // std::cout << width << std::endl;
+  // std::cout << height << std::endl;
+
+  while (running) {
+    clear();
+    renderTree(root, Vector2());
+    refresh();
+  }
 }
 void AsciiGraphics::renderTree(Node *node, Vector2 offset) {
   Vector2 global_position(offset);
@@ -66,4 +73,4 @@ void AsciiGraphics::renderTree(Node *node, Vector2 offset) {
     renderTree(child, global_position);
   }
 }
-}  // namespace mouse
+} // namespace mouse
