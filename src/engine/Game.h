@@ -19,11 +19,6 @@
 
 namespace mouse {
 
-enum mouse_status_t {
-  MOUSE_STATUS_OKAY,
-  MOUSE_STATUS_BAD,
-};
-
 /**
  * @brief The Game handles reading in a project, handling
  * game objects as well as the game loop.

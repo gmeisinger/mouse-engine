@@ -4,7 +4,7 @@ TARGET_EXEC := mouse
 BUILD_DIR := ./build
 SRC_DIRS := ./src
 
-PATH_LUA = $(shell echo $(HOME))/Dev/lua-5.4.6/src
+PATH_LUA = $(shell echo $(HOME))/Documents/Dev/lua-5.4.6/src
 
 CXXFLAGS = -g -std=c++17
 

@@ -28,21 +28,24 @@ public:
   std::mutex &getMutex();
   int getWidth();
   int getHeight();
-  static void l_register(lua_State *L);
+
+  static void l_register(lua_State *L, Graphics *g);
 
 protected:
+  static Graphics *singleton;
+
   void run(){};
 
   std::thread gfx_thread;
-  std::mutex gfx_mutex;
+  std::mutex mutex;
   std::atomic<bool> running;
 
   int width;
   int height;
   Node *root;
 
-  static int l_getWidth(lua_State *L);
-  static int l_getHeight(lua_State *L);
+  static int l_getScreenWidth(lua_State *L);
+  static int l_getScreenHeight(lua_State *L);
   static std::vector<luaL_Reg> l_funcs;
 };
 

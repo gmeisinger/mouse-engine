@@ -31,12 +31,15 @@ static int objectsRef;
 static void initializeTypeGenerators(lua_State *L);
 
 static AsciiGraphics *graphics;
-static int l_getScreenWidth(lua_State *L);
-static int l_getScreenHeight(lua_State *L);
-static std::vector<luaL_Reg> l_graphics_funcs = {
-    {"getScreenWidth", l_getScreenWidth},
-    {"getScreenHeight", l_getScreenHeight}};
 
+/**
+ * @brief Initializes the Lua environment and other
+ * subsystems.
+ *
+ * @param l The main Lua state.
+ * @param project Project data.
+ * @return mouse_status_t
+ */
 mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
   L = l;
   projectData = project;
@@ -56,22 +59,25 @@ mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
 
   initializeTypeGenerators(L);
 
+  /* Init Graphics */
+  graphics = new AsciiGraphics();
+
+  /* Register Modules */
+  Graphics::l_register(L, graphics);
+
   /* Load the initial scene */
   currentScene =
       loadScene(projectData->project_root / projectData->initial_scene);
   std::cout << "Init complete!" << std::endl;
 
-  /* Init Graphics */
-  graphics = new AsciiGraphics();
-
-  /* Register Modules */
-  l_graphics_funcs.push_back({nullptr, nullptr});
-  mlua_registermodule(L, "Graphics", l_graphics_funcs.data());
-
   return MOUSE_STATUS_OKAY;
 }
+/**
+ * @brief Main Game loop.
+ *
+ * @return mouse_status_t
+ */
 mouse_status_t Game::run() {
-  static int loopCounter = 0;
   running = true;
   int frametime = 1000 / GAME_FPS;
   // lua_gc(L, LUA_GCSTOP, 0);
@@ -90,8 +96,6 @@ mouse_status_t Game::run() {
       std::lock_guard<std::mutex> lock(graphics->getMutex());
       currentScene->getTree()->run(L, "Update");
     }
-    // graphics->run(currentScene->getTree());
-    // graphics->setRoot(currentScene->getTree());
     // sleep
     auto end = std::chrono::system_clock::now();
     auto end_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(end);
@@ -103,7 +107,13 @@ mouse_status_t Game::run() {
   delete currentScene;
   return MOUSE_STATUS_OKAY;
 }
-
+/**
+ * @brief Recursively generates a Node tree from a valid YAML node
+ * from a Scene file.
+ *
+ * @param yaml A Parsed YAML node. (Not a Mouse engine Node x_x)
+ * @return Node* The generated Node and all of its children.
+ */
 Node *Game::loadTree(YAML::Node yaml) {
   int stack = lua_gettop(L);
   Node *node;
@@ -128,18 +138,16 @@ Node *Game::loadTree(YAML::Node yaml) {
     lua_pushvalue(L, -2); // get the userdata back on top
     int ref = luaL_ref(L, -2);
     node->setLuaRef(ref);
-    // /* copy the script table and register it */
+    /* copy the script table and register it */
     node->setScript(L, script.c_str());
   }
   if (yaml["name"]) {
-    // std::cout << yaml["name"].as<std::string>().c_str() << std::endl;
     const char *name = yaml["name"].as<std::string>().c_str();
     node->setName(name);
   }
   if (yaml["children"] && yaml["children"].IsSequence()) {
     for (int i = 0; i < yaml["children"].size(); i++) {
-      Node *child = loadTree(
-          yaml["children"][i]["node"]); // this isn't gonna work for long
+      Node *child = loadTree(yaml["children"][i]["node"]); // is this ok?
       if (child != nullptr) {
         node->addChild(child);
       } else {
@@ -149,6 +157,12 @@ Node *Game::loadTree(YAML::Node yaml) {
   }
   return node;
 }
+/**
+ * @brief Attempts to load a Scene from a YAML file at path.
+ *
+ * @param path Path to Scene file.
+ * @return Scene* A Scene obect.
+ */
 Scene *Game::loadScene(std::filesystem::path path) {
   std::cout << path << std::endl;
   YAML::Node yaml = YAML::LoadFile(path.string());
@@ -160,6 +174,14 @@ Scene *Game::loadScene(std::filesystem::path path) {
   } else
     return nullptr;
 }
+/**
+ * @brief Type Generators are used when building the tree from a
+ * scene file. Depending on the type of Node, the C++ object and
+ * Lua userdata will be created, and the metatable for that userdata
+ * will be set.
+ *
+ * @param L A Lua state object.
+ */
 void initializeTypeGenerators(lua_State *L) {
   nodeGenerators["Node"] = [](lua_State *L) -> void * {
     Node *node = new Node();
@@ -173,7 +195,22 @@ void initializeTypeGenerators(lua_State *L) {
     mlua_setobjectmetatable(L, "Node2d");
     return (void *)node;
   };
+  nodeGenerators["Sprite"] = [](lua_State *L) -> void * {
+    Sprite *node = new Sprite();
+    *reinterpret_cast<Sprite **>(lua_newuserdata(L, sizeof(Sprite *))) = node;
+    mlua_setobjectmetatable(L, "Sprite");
+    return (void *)node;
+  };
 }
+/**
+ * @brief Executes the generator function for baseType. If
+ * successful, returns a pointer to a new object of
+ * type baseType.
+ *
+ * @param L Lua state object.
+ * @param basetype Lookup string for generator. Ex "Node", "Sprite".
+ * @return void* A pointer to the generated type, or nullptr
+ */
 void *Game::generateBaseType(lua_State *L, const char *basetype) {
   if (nodeGenerators.find(basetype) != nodeGenerators.end()) {
     return nodeGenerators[basetype](L);
@@ -181,15 +218,6 @@ void *Game::generateBaseType(lua_State *L, const char *basetype) {
     std::cout << "No generator for " << basetype << std::endl;
     return nullptr;
   }
-}
-
-int l_getScreenWidth(lua_State *L) {
-  lua_pushinteger(L, graphics->getWidth());
-  return 1;
-}
-int l_getScreenHeight(lua_State *L) {
-  lua_pushinteger(L, graphics->getHeight());
-  return 1;
 }
 
 } // namespace mouse

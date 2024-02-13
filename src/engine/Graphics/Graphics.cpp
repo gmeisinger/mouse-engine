@@ -7,25 +7,29 @@
 
 namespace mouse {
 
+Graphics *Graphics::singleton = nullptr;
+
 int Graphics::getWidth() { return this->width; }
 int Graphics::getHeight() { return this->height; }
-std::mutex &Graphics::getMutex() { return this->gfx_mutex; }
+std::mutex &Graphics::getMutex() { return this->mutex; }
 
 // Lua wrappers
 
-int Graphics::l_getWidth(lua_State *L) {
-  Graphics *g = *reinterpret_cast<Graphics **>(lua_touserdata(L, 1));
-  lua_pushinteger(L, g->getWidth());
+int Graphics::l_getScreenWidth(lua_State *L) {
+  // Graphics *g = *reinterpret_cast<Graphics **>(lua_touserdata(L, 1));
+  lua_pushinteger(L, singleton->getWidth());
   return 1;
 }
-int Graphics::l_getHeight(lua_State *L) {
-  Graphics *g = *reinterpret_cast<Graphics **>(lua_touserdata(L, 1));
-  lua_pushinteger(L, g->getHeight());
+int Graphics::l_getScreenHeight(lua_State *L) {
+  // Graphics *g = *reinterpret_cast<Graphics **>(lua_touserdata(L, 1));
+  lua_pushinteger(L, singleton->getHeight());
   return 1;
 }
 std::vector<luaL_Reg> Graphics::l_funcs = {
-    {"getWidth", Graphics::l_getWidth}, {"getHeight", Graphics::l_getHeight}};
-void Graphics::l_register(lua_State *L) {
+    {"getScreenWidth", Graphics::l_getScreenWidth},
+    {"getScreenHeight", Graphics::l_getScreenHeight}};
+void Graphics::l_register(lua_State *L, Graphics *g) {
+  Graphics::singleton = g;
   l_funcs.push_back({nullptr, nullptr});
   mlua_registermodule(L, "Graphics", l_funcs.data());
 }
