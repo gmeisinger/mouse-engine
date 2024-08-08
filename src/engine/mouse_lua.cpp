@@ -89,15 +89,15 @@ void mlua_registerscript(lua_State *L, const char *type) {
   lua_setfield(L, -2, type); // _mousetypes[type] = mt
   lua_pop(L, 2);
 }
-void mlua_registermodule(lua_State *L, const char *mod_name, const luaL_Reg *l_funcs)
-{
+void mlua_registermodule(lua_State *L, const char *mod_name,
+                         const luaL_Reg *l_funcs) {
   // lua_newtable(L);
   // lua_setglobal(L, mod_name);
-  
+
   /* Modules live in the global table "Mouse"
    * They cannot be instanced, but provide static functions
    */
-  
+
   luaL_newmetatable(L, mod_name);
 
   lua_pushvalue(L, -1);
@@ -111,8 +111,6 @@ void mlua_registermodule(lua_State *L, const char *mod_name, const luaL_Reg *l_f
 
   /* Pop the registry, leave the mt */
   lua_pop(L, 2);
-
-  
 }
 void mlua_registertype(lua_State *L, const char *type, lua_CFunction l_new,
                        const luaL_Reg *l_funcs) {
@@ -273,6 +271,18 @@ int mlua_getregistry(lua_State *L, Registry r) {
       // registry._mouseobjects = newtable
       lua_setglobal(L, "Mouse");
       lua_getglobal(L, "Mouse");
+    }
+    return 1;
+  case REGISTRY_CALLBACKS:
+    lua_getfield(L, LUA_REGISTRYINDEX, "_mousecallbacks");
+
+    // Create registry._mousetypes if it doesn't exist yet.
+    if (!lua_istable(L, -1)) {
+      lua_newtable(L);
+      lua_replace(L, -2);
+
+      lua_setfield(L, LUA_REGISTRYINDEX, "_mousecallbacks");
+      lua_getfield(L, LUA_REGISTRYINDEX, "_mousecallbacks");
     }
     return 1;
   default:

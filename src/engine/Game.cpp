@@ -11,6 +11,8 @@
 
 #include "Game.h"
 #include "AsciiGraphics.h"
+#include "EventManager.h"
+
 #include <chrono>
 #include <iostream>
 #include <thread>
@@ -31,6 +33,7 @@ static int objectsRef;
 static void initializeTypeGenerators(lua_State *L);
 
 static AsciiGraphics *graphics;
+static EventManager *eventManager;
 
 /**
  * @brief Initializes the Lua environment and other
@@ -59,11 +62,13 @@ mouse_status_t Game::init(lua_State *l, mouse_project_data_t *project) {
 
   initializeTypeGenerators(L);
 
-  /* Init Graphics */
+  /* Init modules */
   graphics = new AsciiGraphics();
+  eventManager = new EventManager();
 
   /* Register Modules */
   Graphics::l_register(L, graphics);
+  EventManager::l_register(L, eventManager);
 
   /* Load the initial scene */
   currentScene =

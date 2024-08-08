@@ -101,11 +101,11 @@ void Node::setScript(lua_State *L, const char *script) {
 // Lifecycle methods
 
 void Node::run(lua_State *L, const char *method) {
-  if (scriptref < 0) return;
+  if (scriptref < 0)
+    return;
   // get the userdata
   mlua_getobject(L, getLuaRef());
   if (!lua_isuserdata(L, -1)) {
-    // std::cout << "Node lost its lua obj ref!" << std::endl;
   }
 
   // get it's script table
@@ -128,11 +128,9 @@ void Node::run(lua_State *L, const char *method) {
       lua_pop(L, 2);
     } else {
       lua_pop(L, 3);
-      // std::cout << "Could not find function " << method << std::endl;
     }
   } else {
     lua_pop(L, 2);
-    // std::cout << "Could not find script table " << method << std::endl;
   }
   for (int i = 0; i < children.size(); i++) {
     if (children[i] == nullptr) {
@@ -169,21 +167,15 @@ int Node::l_getChild(lua_State *L) {
     return 1;
   }
   if (child == nullptr) {
-    // std::cout << "this child is nullptr!" << std::endl;
     lua_pushnil(L);
     return 1;
   }
   // We want to get the ref to this guy
   mlua_getobject(L, child->getLuaRef());
-  // instead of creating a new one!
-  // *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = child;
   if (!lua_isuserdata(L, -1)) {
-    // std::cout << "this child is not userdata!" << std::endl;
     lua_pushnil(L);
     lua_replace(L, -2);
   }
-  // Set the metatable for the userdata (shouldn't need to now)
-  // mlua_setobjectmetatable(L, child->getBaseType());
   return 1;
 }
 int Node::l_getParent(lua_State *L) {
@@ -191,9 +183,6 @@ int Node::l_getParent(lua_State *L) {
   Node **nodePtr = reinterpret_cast<Node **>(lua_touserdata(L, 1));
   Node *parent = (*nodePtr)->getParent();
   mlua_getobject(L, parent->getLuaRef());
-  // *reinterpret_cast<Node **>(lua_newuserdata(L, sizeof(Node *))) = parent;
-  // Set the metatable for the userdata
-  // mlua_setobjectmetatable(L, parent->getBaseType());
   return 1;
 }
 int Node::l_removeChild(lua_State *L) {
@@ -272,4 +261,4 @@ void Node::l_register(lua_State *L) {
   mlua_registertype(L, "Node", l_new, l_funcs.data());
 }
 
-}  // namespace mouse
+} // namespace mouse

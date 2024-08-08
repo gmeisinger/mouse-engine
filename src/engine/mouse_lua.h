@@ -33,9 +33,10 @@ template <typename T> class StrongRef;
  * mlua_getregistry.
  **/
 enum Registry {
-  REGISTRY_OBJECTS, // for instanced object refs
-  REGISTRY_TYPES,   // for type metatables
-  REGISTRY_MODULES, // for global module tables
+  REGISTRY_OBJECTS,   // for instanced object refs
+  REGISTRY_TYPES,     // for type metatables
+  REGISTRY_MODULES,   // for global module tables
+  REGISTRY_CALLBACKS, // for event callbacks
 };
 
 void mlua_setrootpath(std::filesystem::path path);
@@ -65,7 +66,17 @@ const char *mlua_loadscript(lua_State *L, const char *path);
  * @param type
  */
 void mlua_registerscript(lua_State *L, const char *type);
-void mlua_registermodule(lua_State *L, const char *mod_name, const luaL_Reg *l_funcs);
+/**
+ * @brief Registers a Lua module, which are global tables of C functions inside
+ * the "Mouse" table in Lua. Ex "Mouse.Graphics".
+ *
+ * @param L
+ * @param mod_name
+ * @param l_funcs
+ */
+void mlua_registermodule(lua_State *L, const char *mod_name,
+                         const luaL_Reg *l_funcs);
+// void mlua_registercallback(lua_State *L);
 /**
  * Registers a base type for use in Lua. Base types represent C++ classes.
  * They are registered at boot and are available in all scripts.
