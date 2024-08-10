@@ -1,0 +1,4 @@
+root:
+  script: scripts/EventTest.lua
+  type: Node
+  name: root

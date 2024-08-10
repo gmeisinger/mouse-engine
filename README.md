@@ -2,17 +2,22 @@
 
 A tiny game engine designed with ASCII graphics in mind.
 
+How to build:
+
+- Go to makefile and point it at your Lua
+- `make`
+
 ### Dependencies
 
-* Lua 5.4
-* yaml-cpp [https://github.com/jbeder/yaml-cpp]()
-* ncurses
+- Lua 5.4
+- yaml-cpp [https://github.com/jbeder/yaml-cpp]()
+- ncurses
 
 ### Adding Functionality to Nodes
 
 1. Write the class function
 2. Write the lua wrapper
-    * Takes lua_State, returns int, uses stack
+   - Takes lua_State, returns int, uses stack
 3. Add the function to the register list
 
 ### What is exposed to Lua?

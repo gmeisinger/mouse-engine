@@ -27,6 +27,7 @@ function Intro:Start(node)
   math.randomseed(os.time())
   self.center_x = (Mouse.Graphics.getScreenWidth() // 2) - (#self.titleString // 2)
   self.center_y = Mouse.Graphics.getScreenHeight() // 2
+  Mouse.Logger.log("hello!")
   for i = 1, #self.msg do
     local top = i % 2
     local c = self.msg:sub(i,i)

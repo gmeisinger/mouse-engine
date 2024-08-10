@@ -15,12 +15,24 @@ namespace mouse {
 
 EventManager *EventManager::singleton = nullptr;
 
-void EventManager::fire(const char *event) {
+void EventManager::fire(lua_State *L, const char *event,
+                        std::vector<int> args) {
   if (event_map.find(event) != event_map.end()) {
-    for (auto &sub : event_map[event]) {
-      // retrive function and call it
-      // mlua_... gotta write it lul
-      // but we can't do it here without an L ref
+    for (Subscriber sub : event_map[event]) {
+      // get the callback, put it on stack
+      lua_rawgeti(L, LUA_REGISTRYINDEX, sub.callback);
+      // put the node ref on the stack
+      mlua_getobject(L, sub.node->getLuaRef());
+      // put the args on the stack
+      for (int arg : args) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, arg);
+      }
+      // call it!
+      lua_pcall(L, args.size() + 1, 0, 0);
+      // release the args
+      for (int arg : args) {
+        luaL_unref(L, LUA_REGISTRYINDEX, arg);
+      }
     }
   }
 }
@@ -46,15 +58,15 @@ int EventManager::l_fire(lua_State *L) {
   // first arg is the event string
   const char *event_str = (const char *)luaL_checkstring(L, 1);
   // rest of args are... args!
-  /* We need to:
-  1. cache the args in a stack?
-  2. use the string to get the callbacks
-    - the string should map to an array of ints. These ints are the lua registry
-  indexes for the lua functions
-  3. call it with the args
-    - put the function on the stack, then push all the args
-    - call with lua_call or whatever, look it up
-  */
+  /* cache the args in a vector */
+  std::vector<int> args;
+  int nargs = lua_gettop(L);
+  for (int i = 0; i < nargs; i++) {
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    args.push_back(ref);
+  }
+  /* and fire! */
+  EventManager::singleton->fire(L, event_str, args);
   return 0;
 }
 int EventManager::l_subscribe(lua_State *L) {
@@ -63,6 +75,7 @@ int EventManager::l_subscribe(lua_State *L) {
   // second arg is the event string
   const char *event_str = (const char *)luaL_checkstring(L, 2);
   // third arg is the callback, we want to cache it and use the ref
+  lua_pushvalue(L, 3);
   int callback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   EventManager::singleton->subscribe(*nodePtr, event_str, callback_ref);

@@ -12,14 +12,13 @@
 #ifndef EVENT_MANAGER_H
 #define EVENT_MANAGER_H
 
+#include "Node.h"
 #include "mouse_lua.h"
 #include <map>
 #include <string>
 #include <vector>
 
 namespace mouse {
-
-class Node;
 
 struct Subscriber {
   Node *node;
@@ -36,7 +35,7 @@ public:
    *
    * @param event
    */
-  void fire(const char *event);
+  void fire(lua_State *L, const char *event, std::vector<int> args);
   /**
    * @brief Subscribes the node to the given event string.
    *
