@@ -29,10 +29,10 @@ public:
 
   static void l_register(lua_State *L, Logger *logger);
 
+  static Logger *singleton;
+
 protected:
   std::ofstream logFile; // File stream for the log file
-
-  static Logger *singleton;
 
   static int l_log(lua_State *L);
   static std::vector<luaL_Reg> l_funcs;

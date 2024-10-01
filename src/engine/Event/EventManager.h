@@ -15,6 +15,7 @@
 #include "Node.h"
 #include "mouse_lua.h"
 #include <map>
+#include <stack>
 #include <string>
 #include <vector>
 

@@ -10,6 +10,7 @@
  */
 
 #include "EventManager.h"
+#include "Logger.h"
 
 namespace mouse {
 
@@ -21,12 +22,23 @@ void EventManager::fire(lua_State *L, const char *event,
     for (Subscriber sub : event_map[event]) {
       // get the callback, put it on stack
       lua_rawgeti(L, LUA_REGISTRYINDEX, sub.callback);
-      // put the node ref on the stack
-      mlua_getobject(L, sub.node->getLuaRef());
       // put the args on the stack
       for (int arg : args) {
         lua_rawgeti(L, LUA_REGISTRYINDEX, arg);
+        int type = lua_type(L, 1);
+        switch (type) {
+        case LUA_TNUMBER:
+          break;
+        case LUA_TSTRING:
+          Logger::singleton->log(lua_tostring(L, 1));
+          break;
+        default:
+          Logger::singleton->log("not a string...");
+          break;
+        }
       }
+      // put the node ref on the stack
+      mlua_getobject(L, sub.node->getLuaRef());
       // call it!
       lua_pcall(L, args.size() + 1, 0, 0);
       // release the args
@@ -55,16 +67,17 @@ void EventManager::unsubscribe(Node *node, const char *event) {
 /* Lua Callbacks */
 
 int EventManager::l_fire(lua_State *L) {
-  // first arg is the event string
-  const char *event_str = (const char *)luaL_checkstring(L, 1);
-  // rest of args are... args!
   /* cache the args in a vector */
   std::vector<int> args;
-  int nargs = lua_gettop(L);
+  int nargs = lua_gettop(L) - 1;
   for (int i = 0; i < nargs; i++) {
     int ref = luaL_ref(L, LUA_REGISTRYINDEX);
     args.push_back(ref);
   }
+  // last arg is the event string
+  const char *event_str = (const char *)luaL_checkstring(L, 1);
+  // we need to pop this off the stack
+  lua_pop(L, 1);
   /* and fire! */
   EventManager::singleton->fire(L, event_str, args);
   return 0;
@@ -79,6 +92,9 @@ int EventManager::l_subscribe(lua_State *L) {
   int callback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   EventManager::singleton->subscribe(*nodePtr, event_str, callback_ref);
+  while (lua_gettop(L) > 0) {
+    lua_pop(L, 1);
+  }
   return 0;
 }
 int EventManager::l_unsubscribe(lua_State *L) {
